@@ -1,0 +1,51 @@
+project(SuiteSparse)
+cmake_minimum_required(VERSION 3.0.2)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--unresolved-symbols=ignore-in-shared-libs -Wl,--as-needed")
+find_package(Metis REQUIRED)
+find_package(BLAS REQUIRED)
+
+include_directories(src/SuiteSparse_config src)
+link_libraries(m)
+
+file(GLOB suitesparseconfig_hdrs "src/SuiteSparse_config/*.h")
+file(GLOB suitesparseconfig_srcs "src/SuiteSparse_config/*.c")
+add_library(suitesparseconfig ${suitesparseconfig_srcs})
+
+macro(build_mod name ver)
+  string(TOLOWER ${name} lib)
+  file(GLOB ${name}_hdrs "src/${name}/Include/*.h")
+  file(GLOB ${name}_srcs "SourceWrappers/${name}/*.c")
+  add_library(${lib} ${${name}_srcs})
+  target_include_directories(${lib} PRIVATE "src/${name}/Include")
+  target_link_libraries(${lib} suitesparseconfig)
+  if (NOT ${ver} STREQUAL OFF)
+    string(REPLACE "." ";" vers ${ver})
+    list(GET vers 0 so_ver)
+    set_target_properties(${lib} PROPERTIES VERSION ${ver} SOVERSION ${so_ver})
+  endif()
+endmacro()
+
+build_mod(AMD 2.4.6)
+build_mod(BTF 1.2.6)
+build_mod(CAMD 2.4.6)
+build_mod(CCOLAMD 2.9.6)
+build_mod(COLAMD 2.9.6)
+build_mod(CHOLMOD 3.0.11)
+target_include_directories(cholmod PUBLIC "src/AMD/Include" "src/CAMD/Include" "src/CCOLAMD/Include" "src/COLAMD/Include" ${METIS_INCLUDE_DIR})
+target_link_libraries(cholmod amd camd ccolamd colamd ${METIS_LIBRARIES} ${BLAS_LIBRARIES})
+
+build_mod(CXSparse 3.1.9)
+
+build_mod(LDL 2.2.6)
+build_mod(KLU 1.3.8)
+target_include_directories(klu PUBLIC "src/AMD/Include" "src/COLAMD/Include" "src/BTF/Include")
+target_link_libraries(klu amd colamd btf)
+
+build_mod(UMFPACK 5.7.6)
+target_include_directories(umfpack PUBLIC "src/AMD/Include" "src/CHOLMOD/Include")
+target_link_libraries(umfpack amd cholmod)
+
+build_mod(RBio 2.2.6)
+#build_mod(SPQR 2.0.8)
