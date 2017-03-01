@@ -6,14 +6,22 @@ from glob import glob
 base_d = 'src'
 out_d = 'SourceWrappers'
 
-out_tpl0 = "#include <{inc}>"
+wrapper_tpl0 = "#include <{inc}>"
 
-out_tpl = """#define {define}
+wrapper_tpl = """
+#define {define}
 #include <{inc}>
 """
 
-out_tpl2 = """{defines}
+wrapper_tpl2 = """{defines}
 #include <{inc}>
+"""
+
+ncwrapper_tpl2 = """
+#ifndef NCOMPLEX
+{defines}
+#include <{inc}>
+#endif
 """
 
 scan_dic = {
@@ -50,8 +58,11 @@ map_files_dic = {
     }
 }
 
+cc_ext_mods = {}
+
 skip_files_dic = {
     'UMFPACK': ['umf_multicompile'],
+    'CXSparse': ['cs_convert'],
 }
 
 def file_name(f):
@@ -60,6 +71,7 @@ def file_name(f):
 def do_map_file(inc_f, defs, dst_f, mod_defs):
     if type(defs) == str:
         defs = [defs]
+    cext = path.splitext(dst_f)[-1]
     if mod_defs:
         dst_fname = path.splitext(dst_f)[0]
         for k, v in mod_defs.items():
@@ -67,11 +79,11 @@ def do_map_file(inc_f, defs, dst_f, mod_defs):
                 v = [v]
             defs1 = defs + v
             defines = '\n'.join(['#define '+i for i in defs1])
-            dst_f = dst_fname+'_'+k+'.c'
-            open(dst_f, 'w').write(out_tpl2.format(defines=defines, inc=inc_f))
+            dst_f = dst_fname+'_'+k+cext
+            open(dst_f, 'w').write(wrapper_tpl2.format(defines=defines, inc=inc_f))
     else:
         defines = '\n'.join(['#define '+i for i in defs])
-        open(dst_f, 'w').write(out_tpl2.format(defines=defines, inc=inc_f))
+        open(dst_f, 'w').write(wrapper_tpl2.format(defines=defines, inc=inc_f))
 
 if __name__ == "__main__":
     makedirs(out_d, exist_ok=True)
@@ -81,6 +93,7 @@ if __name__ == "__main__":
         expand_files = expand_files_dic.get(mod, [])
         map_files = map_files_dic.get(mod, {})
         skip_files = skip_files_dic.get(mod, [])
+        cext = '.cc' if mod in cc_ext_mods else '.c'
         for scan_d in scan_dirs:
             srcs = glob(base_d+'/'+mod+'/'+scan_d+'/*.c')
             if mod == 'CHOLMOD':
@@ -101,37 +114,51 @@ if __name__ == "__main__":
                     cfgs = [cfgs]
                 for cfg in cfgs:
                     defs, suffix, is_expand = cfg
-                    do_map_file(inc_f, defs, p+'/'+fname+'_'+suffix+'.c', mod_defs if is_expand else {})
+                    do_map_file(inc_f, defs, p+'/'+fname+'_'+suffix+cext, mod_defs if is_expand else {})
 
             for f in srcs:
                 content = open(f).read()
                 fname = file_name(f)
                 inc_f = inc_d+'/'+path.basename(f)
-                if mod in ('CXSparse', 'KLU'):
-                    if all(i not in content for i in ['Entry ', 'Entry)']) and mod == 'KLU':
+                if mod == 'KLU':
+                    if all(i not in content for i in ['Entry ', 'Entry)']):
                         for tp in ['i', 'l']:
-                            out_f = p+'/'+fname+'_'+tp+'.c'
+                            out_f = p+'/'+fname+'_'+tp+cext
                             defines = []
                             if tp == 'l':
                                 defines += ['#define '+mod_defs[tp]]
-                            out_content = out_tpl2.format(defines='\n'.join(defines), inc=inc_f)
+                            out_content = wrapper_tpl2.format(defines='\n'.join(defines), inc=inc_f)
                             open(out_f, 'w').write(out_content)
                     else:
                         for tp0 in ['i', 'l']:
                             for tp1 in ['d', 'c']:
-                                out_f = p+'/'+fname+'_'+tp1+tp0+'.c'
+                                out_f = p+'/'+fname+'_'+tp1+tp0+cext
                                 defines = []
                                 if tp0 == 'l':
                                     defines += ['#define '+mod_defs[tp0]]
                                 if tp1 == 'c':
                                     defines += ['#define '+mod_defs[tp1]]
-                                out_content = out_tpl2.format(defines='\n'.join(defines), inc=inc_f)
+                                out_content = wrapper_tpl2.format(defines='\n'.join(defines), inc=inc_f)
                                 open(out_f, 'w').write(out_content)
+
+                elif mod == 'CXSparse':
+                    for tp0 in ['i', 'l']:
+                        for tp1 in ['d', 'c']:
+                            out_f = p+'/'+fname+'_'+tp1+tp0+cext
+                            defines = []
+                            if tp0 == 'l':
+                                defines += ['#define '+mod_defs[tp0]]
+                            if tp1 == 'c':
+                                defines += ['#define '+mod_defs[tp1]]
+                            tpl = ncwrapper_tpl2 if tp1 == 'c' else wrapper_tpl2
+                            out_content = tpl.format(defines='\n'.join(defines), inc=inc_f)
+                            open(out_f, 'w').write(out_content)
+
 
                 elif mod in ('UMFPACK',):
                     if all(i not in content for i in ['Entry ', 'Entry)', 'Int ', 'Int)']) and fname not in expand_files:
-                        out_f = p+'/'+fname+'.c'
-                        open(out_f, 'w').write(out_tpl0.format(inc=inc_f))
+                        out_f = p+'/'+fname+cext
+                        open(out_f, 'w').write(wrapper_tpl0.format(inc=inc_f))
                     else:
                         defs1 = mod_defs.copy()
                         if all(i not in content for i in ['Entry ', 'Entry)']) and fname not in expand_files:
@@ -139,8 +166,8 @@ if __name__ == "__main__":
                             del defs1['cl']
 
                         for i, v in defs1.items():
-                            out_f = p + '/' + fname+'_'+i+'.c'
-                            out_content = out_tpl.format(define=v, inc=inc_f)
+                            out_f = p + '/' + fname+'_'+i+cext
+                            out_content = wrapper_tpl.format(define=v, inc=inc_f)
                             open(out_f, 'w').write(out_content)
 
                 else:
@@ -148,13 +175,13 @@ if __name__ == "__main__":
 
                         for tp in ['i', 'l']:
                             if tp in mod_defs:
-                                out_f = p+'/'+fname+'_'+tp+'.c'
-                                out_content = out_tpl.format(define=mod_defs[tp], inc=inc_f)
+                                out_f = p+'/'+fname+'_'+tp+cext
+                                out_content = wrapper_tpl.format(define=mod_defs[tp], inc=inc_f)
                                 open(out_f, 'w').write(out_content)
                             else:
-                                out_f = p+'/'+fname+'_'+tp+'.c'
-                                open(out_f, 'w').write(out_tpl0.format(inc=inc_f))
+                                out_f = p+'/'+fname+'_'+tp+cext
+                                open(out_f, 'w').write(wrapper_tpl0.format(inc=inc_f))
 
                     else:
-                        out_f = p+'/'+fname+'.c'
-                        open(out_f, 'w').write(out_tpl0.format(inc=inc_f))
+                        out_f = p+'/'+fname+cext
+                        open(out_f, 'w').write(wrapper_tpl0.format(inc=inc_f))
