@@ -38,7 +38,7 @@ def_dic = {
 }
 
 expand_files_dic = {
-    'CHOLMOD': ['cholmod_super_solve'],
+    'CHOLMOD': ['cholmod_super_solve', 'cholmod_version'],
     'UMFPACK': ['umf_mem_alloc_head_block', 'umf_mem_alloc_tail_block', 'umf_tuple_lengths', 'umf_mem_free_tail_block', 'umfpack_free_numeric', 'umfpack_free_symbolic', 'umf_transpose', 'umf_symbolic_usage', 'umf_set_stats', 'umf_valid_numeric', 'umf_valid_symbolic', 'umf_mem_init_memoryspace', 'umf_kernel', 'umf_build_tuples'],
 }
 

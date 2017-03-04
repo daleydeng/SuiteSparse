@@ -1,26 +1,21 @@
 from glob import glob
 import re
-from os import path
+from os import path, environ
 import sys
+import shutil
+dst_wscom_f = 'wscript_common.py'
+if not path.exists('wscript_common.py'):
+    wscom_f = environ['DEEP3D_BASE']+'/deep3d/base/wscript_common.py'
+    shutil.copy2(wscom_f, '.')
+
+from wscript_common import base_options_C, base_configure_C, bld_shlib
 
 def options(opt):
-    opt.load('compiler_c')
-    opt.add_option('--sys', help='system prefix path for searching requirments')
+    base_options_C(opt)
 
 def configure(conf):
-    conf.load('compiler_c')
+    base_configure_C(conf)
     env = conf.env
-    sys_prefix = conf.options.sys
-    if sys_prefix:
-        inc_path = sys_prefix+'/include'
-        env.prepend_value('CFLAGS', '-I'+inc_path)
-        env.prepend_value('CXXFLAGS', '-I'+inc_path)
-        libpath = [sys_prefix+'/lib', sys_prefix+'/lib64']
-        env.prepend_value('LIBPATH', libpath)
-
-    if not conf.options.out:
-        conf.options.out = 'build'
-    env.append_value('RPATH', path.realpath(conf.options.out))
 
     if sys.platform != 'win32':
         conf.check_cc(lib='m', uselib_store='m')
@@ -51,21 +46,13 @@ def extract_suitesparse_version(base_d):
         versions[mod] = version, so_version
     return versions
 
-def bld_shlib(bld, **kws):
-    if sys.platform == 'win32':
-        if 'vnum' in kws:
-            kws.pop('vnum')
-        if 'cnum' in kws:
-            kws.pop('cnum')
-    bld.shlib(**kws)
-
 def build(bld):
     env = bld.env
     versions = extract_suitesparse_version('src')
     env.append_value('INCLUDES', ['src', 'src/SuiteSparse_config'])
 
     mod = 'suitesparseconfig'
-    bld_shlib(bld, source=glob('src/SuiteSparse_config/*.c'), target=mod, use=['m'], vnum=versions[mod][0], defs='defs/{}.def'.format(mod))
+    bld_shlib(bld, source=glob('src/SuiteSparse_config/*.c'), target=mod, use=['m'], vnum=versions[mod][0], defs='defs/{}.def'.format(mod), install_path='${PREFIX}/lib')
 
     mod_deps = {
         'CHOLMOD': ['AMD', 'CAMD', 'CCOLAMD', 'COLAMD', 'openblas', 'metis'],
@@ -78,4 +65,6 @@ def build(bld):
         lib = [i.lower() for i in deps]
         incs = ['src/'+i+'/Include' for i in deps]
         use = ['m', 'suitesparseconfig']+[i.lower() for i in deps]
-        bld_shlib(bld, source=glob('SourceWrappers/'+mod+'/*.c*'), target=mod.lower(), includes=['src/'+mod+'/Include']+incs, use=use, vnum=versions[mod][0], defs='defs/{}.def'.format(mod.lower()))
+        bld_shlib(bld, source=glob('SourceWrappers/'+mod+'/*.c*'), target=mod.lower(), includes=['src/'+mod+'/Include']+incs, use=use, vnum=versions[mod][0], defs='defs/{}.def'.format(mod.lower()), install_path='${PREFIX}/lib')
+
+    bld.install_files('${PREFIX}/include/suitesparse', glob('src/SuiteSparse/*.h')+glob('src/*/Include/*.h'))
