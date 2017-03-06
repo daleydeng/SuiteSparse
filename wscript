@@ -23,6 +23,7 @@ def configure(conf):
     else:
         # _Complex in C99 not supported by msvc
         env.append_value('DEFINES', 'NCOMPLEX=1')
+        env.WIN_STATIC = True
 
     conf.check_cc(lib='metis', uselib_store='metis')
     conf.check_cc(lib='openblas', uselib_store='openblas')
@@ -33,7 +34,7 @@ version_files = {
 
 def extract_suitesparse_version(base_d):
     versions = {}
-    for mod in ['suitesparseconfig', 'AMD', 'BTF', 'CAMD', 'CCOLAMD', 'COLAMD', 'CHOLMOD', 'CXSparse', 'LDL', 'KLU', 'UMFPACK', 'RBio']:
+    for mod in ['suitesparseconfig', 'AMD', 'BTF', 'CAMD', 'CCOLAMD', 'COLAMD', 'CHOLMOD', 'CXSparse', 'LDL', 'KLU', 'UMFPACK', 'RBio', 'SPQR']:
         vf = version_files.get(mod, mod+'/Lib/Makefile')
         for l in open(base_d+'/'+vf):
             k, *v = l.split('=')
@@ -52,7 +53,7 @@ def build(bld):
     env.append_value('INCLUDES', ['src', 'src/SuiteSparse_config'])
 
     mod = 'suitesparseconfig'
-    bld_shlib(bld, source=glob('src/SuiteSparse_config/*.c'), target=mod, use=['m'], vnum=versions[mod][0], defs='defs/{}.def'.format(mod), install_path='${PREFIX}/lib')
+    bld_shlib(bld, source=glob('src/SuiteSparse_config/*.c'), target=mod, use=['m'], vnum=versions[mod][0], defs='defs/{}.def'.format(mod))
 
     mod_deps = {
         'CHOLMOD': ['AMD', 'CAMD', 'CCOLAMD', 'COLAMD', 'openblas', 'metis'],
@@ -65,6 +66,11 @@ def build(bld):
         lib = [i.lower() for i in deps]
         incs = ['src/'+i+'/Include' for i in deps]
         use = ['m', 'suitesparseconfig']+[i.lower() for i in deps]
-        bld_shlib(bld, source=glob('SourceWrappers/'+mod+'/*.c*'), target=mod.lower(), includes=['src/'+mod+'/Include']+incs, use=use, vnum=versions[mod][0], defs='defs/{}.def'.format(mod.lower()), install_path='${PREFIX}/lib')
+        bld_shlib(bld, source=glob('SourceWrappers/'+mod+'/*.c*'), target=mod.lower(), includes=['src/'+mod+'/Include']+incs, use=use, vnum=versions[mod][0], defs='defs/{}.def'.format(mod.lower()))
 
     bld.install_files('${PREFIX}/include/suitesparse', glob('src/SuiteSparse/*.h')+glob('src/*/Include/*.h'))
+
+    mod = 'SPQR'
+    bld_shlib(bld, source=glob('src/{}/Source/*.cpp'.format(mod)), target=mod.lower(), includes=['src/{}/Include'.format(mod), 'src/CHOLMOD/Include'], vnum=versions[mod][0])
+    mod = 'RBio'
+    bld_shlib(bld, source=glob('src/{}/Source/*.c'.format(mod)), target=mod.lower(), includes=['src/{}/Include'.format(mod)], use=['suitesparseconfig'], vnum=versions[mod][0])

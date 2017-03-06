@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from glob import glob
 import os
 
 base_d = 'src'
@@ -43,6 +44,7 @@ prefixs_dic = {
     'suitesparseconfig': 'SuiteSparse_',
     'cxsparse': 'cs_',
     'umfpack': ['umf_', 'umfpack_'],
+    'rbio': 'RB',
 }
 
 if __name__ == "__main__":
@@ -54,14 +56,14 @@ if __name__ == "__main__":
     funcs += exports_dic.get(mod, [])
     open(out_d+'/'+mod+'.def', 'w').write(def_tpl.format(mod, '\n'.join(funcs)))
 
-    for i in ['AMD', 'BTF', 'CAMD', 'COLAMD', 'CCOLAMD', 'CHOLMOD', ('CXSparse', 'cs'), 'KLU', 'LDL', 'UMFPACK']:
+    for i in ['AMD', 'BTF', 'CAMD', 'COLAMD', 'CCOLAMD', 'CHOLMOD', ('CXSparse', 'cs.h'), 'KLU', 'LDL', 'UMFPACK', ('RBio', 'RBio.h'), ('SPQR', 'spqr.hpp')]:
         if type(i) == str:
-            h = i.lower()
+            h = i.lower()+'.h'
         else:
             i, h = i
         mod = i.lower()
         ast_f = out_d+'/'+mod+'.ast'
-        gen_ast(base_d+'/{}/Include/{}.h'.format(i, h), ast_f, incs=['src/SuiteSparse_config', 'src/AMD/Include', 'src/COLAMD/Include', 'src/BTF/Include'])
+        gen_ast(base_d+'/{}/Include/{}'.format(i, h), ast_f, incs=['src/SuiteSparse_config']+glob('src/*/Include'))
         funcs = extract_funcs(ast_f)
         funcs += exports_dic.get(mod, [])
         open(out_d+'/'+mod+'.def', 'w').write(def_tpl.format(mod, '\n'.join(funcs)))
