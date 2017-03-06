@@ -68,7 +68,7 @@ def build(bld):
         use = ['m', 'suitesparseconfig']+[i.lower() for i in deps]
         bld_shlib(bld, source=glob('SourceWrappers/'+mod+'/*.c*'), target=mod.lower(), includes=['src/'+mod+'/Include']+incs, use=use, vnum=versions[mod][0], defs='defs/{}.def'.format(mod.lower()))
 
-    bld.install_files('${PREFIX}/include/suitesparse', glob('src/SuiteSparse/*.h')+glob('src/*/Include/*.h'))
+    bld.install_files('${PREFIX}/include/suitesparse', glob('src/SuiteSparse_config/*.h*')+glob('src/*/Include/*.h*'))
 
     mod = 'SPQR'
     bld_shlib(bld, source=glob('src/{}/Source/*.cpp'.format(mod)), target=mod.lower(), includes=['src/{}/Include'.format(mod), 'src/CHOLMOD/Include'], vnum=versions[mod][0])
