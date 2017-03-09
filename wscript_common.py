@@ -30,4 +30,10 @@ def bld_shlib(bld, **kws):
             kws.pop('vnum')
         if 'cnum' in kws:
             kws.pop('cnum')
+        if bld.env.get('WIN_STATIC', False):
+            bld.stlib(**kws)
+            return
+
+    if 'install_path' not in kws:
+        kws['install_path'] = '${PREFIX}/lib'
     bld.shlib(**kws)

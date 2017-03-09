@@ -1,13 +1,15 @@
+import os, shutil
+copy_files = ['wscript_common.py']
+if 'DEEP3D_BASE' in os.environ:
+    for i in copy_files:
+        src_f = os.environ['DEEP3D_BASE']+'/deep3d/base/'+i
+        if not os.path.exists(i) or os.stat(i) < os.stat(src_f):
+            shutil.copy2(src_f, '.')
+
 from glob import glob
 import re
-from os import path, environ
+from os import path
 import sys
-import shutil
-dst_wscom_f = 'wscript_common.py'
-if not path.exists('wscript_common.py'):
-    wscom_f = environ['DEEP3D_BASE']+'/deep3d/base/wscript_common.py'
-    shutil.copy2(wscom_f, '.')
-
 from wscript_common import base_options_C, base_configure_C, bld_shlib
 
 def options(opt):
