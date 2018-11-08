@@ -443,14 +443,14 @@ cs_complex_t cs_ci_house (cs_complex_t *x, double *beta, int n) ;
 int *cs_ci_maxtrans (const cs_ci *A, int seed) ;
 int *cs_ci_post (const int *parent, int n) ;
 cs_cid *cs_ci_scc (cs_ci *A) ;
-int cs_ci_scatter (const cs_ci *A, int j, cs_complex_t beta, int *w,
+int cs_ci_scatter (const cs_ci *A, int j, cs_complex_t beta, int *w, 
     cs_complex_t *x, int mark,cs_ci *C, int nz) ;
 int cs_ci_tdfs (int j, int k, int *head, const int *next, int *post,
     int *stack) ;
 int cs_ci_leaf (int i, int j, const int *first, int *maxfirst, int *prevleaf,
     int *ancestor, int *jleaf) ;
 int cs_ci_reach (cs_ci *G, const cs_ci *B, int k, int *xi, const int *pinv) ;
-int cs_ci_spsolve (cs_ci *L, const cs_ci *B, int k, int *xi,
+int cs_ci_spsolve (cs_ci *L, const cs_ci *B, int k, int *xi, 
     cs_complex_t *x, const int *pinv, int lo) ;
 int cs_ci_ereach (const cs_ci *A, int k, const int *parent, int *s, int *w) ;
 int *cs_ci_randperm (int n, int seed) ;
@@ -591,7 +591,7 @@ cs_long_t cs_cl_leaf (cs_long_t i, cs_long_t j, const cs_long_t *first,
     cs_long_t *maxfirst, cs_long_t *prevleaf, cs_long_t *ancestor, cs_long_t *jleaf) ;
 cs_long_t cs_cl_reach (cs_cl *G, const cs_cl *B, cs_long_t k, cs_long_t *xi,
     const cs_long_t *pinv) ;
-cs_long_t cs_cl_spsolve (cs_cl *L, const cs_cl *B, cs_long_t k, cs_long_t *xi,
+cs_long_t cs_cl_spsolve (cs_cl *L, const cs_cl *B, cs_long_t k, cs_long_t *xi, 
     cs_complex_t *x, const cs_long_t *pinv, cs_long_t lo) ;
 cs_long_t cs_cl_ereach (const cs_cl *A, cs_long_t k, const cs_long_t *parent,
     cs_long_t *s, cs_long_t *w) ;

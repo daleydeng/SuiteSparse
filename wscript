@@ -12,6 +12,14 @@ from os import path
 import sys
 from wscript_common import base_options_C, base_configure_C, bld_shlib
 
+prefix_inc = []
+if 'CONDA_PREFIX' in os.environ:
+    prefix = os.environ['CONDA_PREFIX']
+    prefix_inc.append(prefix+'/include')
+elif 'PREFIX' in os.environ:
+    prefix = os.environ['PREFIX']
+    prefix_inc.append(prefix+'/include')
+
 def options(opt):
     base_options_C(opt)
 
@@ -66,13 +74,13 @@ def build(bld):
     for mod in ['AMD', 'BTF', 'CAMD', 'COLAMD', 'CCOLAMD', 'CHOLMOD', 'CXSparse', 'LDL', 'KLU']:
         deps = mod_deps.get(mod, [])
         lib = [i.lower() for i in deps]
-        incs = ['src/'+i+'/Include' for i in deps]
+        incs = ['src/'+i+'/Include' for i in deps]+prefix_inc
         use = ['m', 'suitesparseconfig']+[i.lower() for i in deps]
         bld_shlib(bld, source=glob('SourceWrappers/'+mod+'/*.c*'), target=mod.lower(), includes=['src/'+mod+'/Include']+incs, use=use, vnum=versions[mod][0], defs='defs/{}.def'.format(mod.lower()))
     headers = [i for i in glob('src/SuiteSparse_config/*.h*')+glob('src/*/Include/*.h*') if i != 'src/CSparse/Include/cs.h']
     bld.install_files('${PREFIX}/include/suitesparse', headers)
 
     mod = 'SPQR'
-    bld_shlib(bld, source=glob('src/{}/Source/*.cpp'.format(mod)), target=mod.lower(), includes=['src/{}/Include'.format(mod), 'src/CHOLMOD/Include'], vnum=versions[mod][0])
+    bld_shlib(bld, source=glob('src/{}/Source/*.cpp'.format(mod)), target=mod.lower(), includes=['src/{}/Include'.format(mod), 'src/CHOLMOD/Include']+prefix_inc, vnum=versions[mod][0])
     mod = 'RBio'
-    bld_shlib(bld, source=glob('src/{}/Source/*.c'.format(mod)), target=mod.lower(), includes=['src/{}/Include'.format(mod)], use=['suitesparseconfig'], vnum=versions[mod][0])
+    bld_shlib(bld, source=glob('src/{}/Source/*.c'.format(mod)), target=mod.lower(), includes=['src/{}/Include'.format(mod)]+prefix_inc, use=['suitesparseconfig'], vnum=versions[mod][0])
