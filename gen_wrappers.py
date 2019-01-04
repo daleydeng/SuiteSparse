@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from os import makedirs, path
+import shutil
 from shutil import copyfile
 from glob import glob
 
@@ -37,13 +38,20 @@ def_dic = {
     'CHOLMOD': {'l': 'DLONG'},
 }
 
-expand_files_dic = {
+expand_file_dic = {
     'CHOLMOD': ['cholmod_super_solve', 'cholmod_version'],
-    'UMFPACK': ['umf_mem_alloc_head_block', 'umf_mem_alloc_tail_block', 'umf_tuple_lengths', 'umf_mem_free_tail_block', 'umfpack_free_numeric', 'umfpack_free_symbolic', 'umf_transpose', 'umf_symbolic_usage', 'umf_set_stats', 'umf_valid_numeric', 'umf_valid_symbolic', 'umf_mem_init_memoryspace', 'umf_kernel', 'umf_build_tuples'],
+}
+
+unexpand_file_dic = {
+    'UMFPACK': ['umfpack_tictoc', 'umfpack_timer'],
+}
+
+unexpand_z_file_dic = {
+    'UMFPACK': ['umf_is_permutation', 'umf_colamd', 'umf_analyze', 'umf_cholmod', 'umf_fsize', 'umf_realloc', 'umf_report_perm', 'umf_singletons', 'umf_free', 'umf_apply_order', 'umf_malloc'],
 }
 
 # src: defines, suffix, is_expand
-map_files_dic = {
+map_file_dic = {
     'UMFPACK': {
         'umf_ltsolve': ['CONJUGATE_SOLVE', 'conj', True],
         'umf_utsolve': ['CONJUGATE_SOLVE', 'conj', True],
@@ -60,7 +68,7 @@ map_files_dic = {
 
 cc_ext_mods = {}
 
-skip_files_dic = {
+skip_file_dic = {
     'UMFPACK': ['umf_multicompile'],
     'CXSparse': ['cs_convert'],
 }
@@ -86,13 +94,16 @@ def do_map_file(inc_f, defs, dst_f, mod_defs):
         open(dst_f, 'w').write(wrapper_tpl2.format(defines=defines, inc=inc_f))
 
 if __name__ == "__main__":
+    shutil.rmtree(out_d)
     makedirs(out_d, exist_ok=True)
     for mod in ['AMD', 'BTF', 'CAMD', 'CCOLAMD', 'CHOLMOD', 'COLAMD', 'CXSparse', 'KLU', 'LDL', 'RBio', 'UMFPACK']:
         scan_dirs = scan_dic.get(mod, ['Source'])
         mod_defs = def_dic.get(mod, {'l': 'DLONG', 'i': 'DINT'})
-        expand_files = expand_files_dic.get(mod, [])
-        map_files = map_files_dic.get(mod, {})
-        skip_files = skip_files_dic.get(mod, [])
+        expand_files = expand_file_dic.get(mod, [])
+        unexpand_files = unexpand_file_dic.get(mod, [])
+        unexpand_z_files = unexpand_z_file_dic.get(mod, [])
+        map_files = map_file_dic.get(mod, {})
+        skip_files = skip_file_dic.get(mod, [])
         cext = '.cc' if mod in cc_ext_mods else '.c'
         for scan_d in scan_dirs:
             srcs = glob(base_d+'/'+mod+'/'+scan_d+'/*.c')
@@ -156,12 +167,12 @@ if __name__ == "__main__":
 
 
                 elif mod in ('UMFPACK',):
-                    if all(i not in content for i in ['Entry ', 'Entry)', 'Int ', 'Int)']) and fname not in expand_files:
+                    if fname in unexpand_files:
                         out_f = p+'/'+fname+cext
                         open(out_f, 'w').write(wrapper_tpl0.format(inc=inc_f))
                     else:
                         defs1 = mod_defs.copy()
-                        if all(i not in content for i in ['Entry ', 'Entry)']) and fname not in expand_files:
+                        if fname in unexpand_z_files:
                             del defs1['ci']
                             del defs1['cl']
 
