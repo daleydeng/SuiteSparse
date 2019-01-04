@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-from os import makedirs, path
+import os
+import os.path as osp
 import shutil
 from shutil import copyfile
 from glob import glob
@@ -74,14 +75,14 @@ skip_file_dic = {
 }
 
 def file_name(f):
-    return path.splitext(path.basename(f))[0]
+    return osp.splitext(osp.basename(f))[0]
 
 def do_map_file(inc_f, defs, dst_f, mod_defs):
     if type(defs) == str:
         defs = [defs]
-    cext = path.splitext(dst_f)[-1]
+    cext = osp.splitext(dst_f)[-1]
     if mod_defs:
-        dst_fname = path.splitext(dst_f)[0]
+        dst_fname = osp.splitext(dst_f)[0]
         for k, v in mod_defs.items():
             if type(v) == str:
                 v = [v]
@@ -94,8 +95,9 @@ def do_map_file(inc_f, defs, dst_f, mod_defs):
         open(dst_f, 'w').write(wrapper_tpl2.format(defines=defines, inc=inc_f))
 
 if __name__ == "__main__":
-    shutil.rmtree(out_d)
-    makedirs(out_d, exist_ok=True)
+    if osp.exists(out_d):
+        shutil.rmtree(out_d)
+    os.makedirs(out_d, exist_ok=True)
     for mod in ['AMD', 'BTF', 'CAMD', 'CCOLAMD', 'CHOLMOD', 'COLAMD', 'CXSparse', 'KLU', 'LDL', 'RBio', 'UMFPACK']:
         scan_dirs = scan_dic.get(mod, ['Source'])
         mod_defs = def_dic.get(mod, {'l': 'DLONG', 'i': 'DINT'})
@@ -108,16 +110,16 @@ if __name__ == "__main__":
         for scan_d in scan_dirs:
             srcs = glob(base_d+'/'+mod+'/'+scan_d+'/*.c')
             if mod == 'CHOLMOD':
-                srcs = [i for i in srcs if not path.basename(i).startswith('t_')]
+                srcs = [i for i in srcs if not osp.basename(i).startswith('t_')]
             srcs = [i for i in srcs if file_name(i) not in skip_files]
 
-            makedirs(out_d+'/'+mod, exist_ok=True)
+            os.makedirs(out_d+'/'+mod, exist_ok=True)
             p = out_d+'/'+mod
             inc_d = mod+'/'+scan_d
 
             for f in srcs:
                 fname = file_name(f)
-                inc_f = inc_d+'/'+path.basename(f)
+                inc_f = inc_d+'/'+osp.basename(f)
                 if fname not in map_files:
                     continue
                 cfgs = map_files[fname]
@@ -130,7 +132,7 @@ if __name__ == "__main__":
             for f in srcs:
                 content = open(f).read()
                 fname = file_name(f)
-                inc_f = inc_d+'/'+path.basename(f)
+                inc_f = inc_d+'/'+osp.basename(f)
                 if mod == 'KLU':
                     if all(i not in content for i in ['Entry ', 'Entry)']):
                         for tp in ['i', 'l']:
