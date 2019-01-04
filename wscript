@@ -68,10 +68,10 @@ def build(bld):
     mod_deps = {
         'CHOLMOD': ['AMD', 'CAMD', 'CCOLAMD', 'COLAMD', 'openblas', 'metis'],
         'KLU': ['AMD', 'COLAMD', 'BTF'],
-        'UMFPACK': ['AMD', 'cholmod'],
+        'UMFPACK': ['AMD', 'CHOLMOD'],
     }
 
-    for mod in ['AMD', 'BTF', 'CAMD', 'COLAMD', 'CCOLAMD', 'CHOLMOD', 'CXSparse', 'LDL', 'KLU']:
+    for mod in ['AMD', 'BTF', 'CAMD', 'COLAMD', 'CCOLAMD', 'CHOLMOD', 'CXSparse', 'LDL', 'KLU', 'UMFPACK']:
         deps = mod_deps.get(mod, [])
         lib = [i.lower() for i in deps]
         incs = ['src/'+i+'/Include' for i in deps]+prefix_inc
