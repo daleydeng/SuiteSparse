@@ -36,7 +36,7 @@ def configure(conf):
         env.WIN_STATIC = True
 
     conf.check_cc(lib='metis', uselib_store='metis')
-    conf.check_cc(lib='openblas', uselib_store='openblas')
+    conf.check_cc(lib='openblas', rpath=prefix+'/lib', uselib_store='openblas')
 
 version_files = {
     'suitesparseconfig': 'SuiteSparse_config/Makefile',
